@@ -33,6 +33,18 @@ function parse_commandline()
       		help = "How many to make"
       		arg_type = Int
       		required = true
+      	"--judger"
+      		help = "The judger to be used"
+      		arg_type = String
+      		default = "ego"
+      	"--fitness"
+      		help = "The fitness function"
+      		arg_type = String
+      		default = "nonRival"
+      	"-k"
+      		help = "Shape parameter for judger"
+      		arg_type = Float64
+      		default = 1.0
     end
 
     return parse_args(s)
@@ -42,6 +54,9 @@ end
 parsed_args = parse_commandline()
 N = parsed_args["N"]
 coopP = parsed_args["C"] / (1.0 * N)
+judgerName = parsed_args["judger"]
+fName = parsed_args["fitness"]
+k = parsed_args["k"]
 
 
 import models
@@ -49,7 +64,10 @@ using LightGraphs
 
 using models.simulateIntroductionModel
 using models.judgerSigmaEgo
+using models.judgerSigmaMean
 using models.fitnessNonRival
+using models.fitnessClassical
+using models.fitnessDivisible
 using models.mutateUniform
 using models.segregationDistributionAveraged
 
@@ -67,10 +85,22 @@ function mySimulator(;coopProp = 0.5, intensity = 0.01)
 	end
 
 	fitFunc = GtoFNonRivalTemplate(5,1,intensity)
-	updater = fitUpdaterTemplate(5,1,intensity)
+	updater = fitUpdaterTemplateNonRival(5,1,intensity)
+	if fName == "classical"
+		fitFunc = GtoFClassicalTemplate(5,1,intensity)
+		updater = fitUpdaterTemplateClassical(5,1,intensity)
+	elseif fName == "divisible"
+		fitFunc = GtoFDivisibleTemplate(5,1, intensity)
+		updater = Nothing
+	end
+	
 	judge = judgeSigmaEgo
+	if judgerName == "Mean"
+		judge = judgerSigmaMean
+	end
+
 	mut = makeMutator(0.01)
-	return simulateIntroModel(G,types,numRounds,judge, fitFunc, mut, sampleInterval = sampleInt, fitUpdater! = updater)
+	return simulateIntroModel(G,types,numRounds,judge, fitFunc, mut, sampleInterval = sampleInt, fitUpdater! = updater, k= k)
 end
 
 for ID in 1:parsed_args["i"]
@@ -82,7 +112,11 @@ for ID in 1:parsed_args["i"]
 	layout=(args...)->spring_layout(args...; C=15)
 	p = gplot(outgraph, nodelabel = map(string, payoffs), nodefillc = nodeColors, layout=layout)
 	C = parsed_args["C"]
-	draw(PNG("$root/figs/example_graphs/$(C)c$(N)popexample$(ID).png", 12cm, 12cm, dpi=250), p)
+	if k != 1.0
+		draw(PNG("$root/figs/example_graphs/$(C)c$(N)pop$(fName)$(judgerName)k$(round(Int,k))example$(ID).png", 12cm, 12cm, dpi=250), p)
+	else
+		draw(PNG("$root/figs/example_graphs/$(C)c$(N)pop$(fName)$(judgerName)example$(ID).png", 12cm, 12cm, dpi=250), p)
+	end
 end
 # nTrials = 1 #just for debug!
 # results = DataFrame(epsilon = Float64[], coop = Float64[], fitDiff = Float64[], payoffDiff = Float64[], u = Float64[])

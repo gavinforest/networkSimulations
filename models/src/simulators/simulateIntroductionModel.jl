@@ -22,7 +22,7 @@ function testEdgeListEquality(graph, edges)
 end
 
 
-function simulateIntroModel(graph, types,numRounds, introJudger, graphToFit, mutation; averagePeriod = 0.1, sampleInterval = -1, k = 1.0, fitUpdater! = Nothing, w = 0.01)
+function simulateIntroModel(graph, types,numRounds, introJudger, graphToFit, mutation; averagePeriod = 0.1, sampleInterval = -1, k = 1.0, fitUpdater! = Nothing, w = 0.01, constDeg = false)
 	# println("Starting simulateIntroModel")
     coopP = (1.0 * sum(types)) / length(types)
     fitnesses = graphToFit(graph, types)
@@ -49,7 +49,7 @@ function simulateIntroModel(graph, types,numRounds, introJudger, graphToFit, mut
             	pConnect = introJudger(graph, types, fitnesses, a,b,c,k)
                 if (rand() < pConnect)
                     ind = ceil(Int, rand()*NE)
-                    toRemove = myEdges[ind]
+                    toRemove = myEdges[ind
                     # toRemove = collect(edges(graph))[rand(1:ne(graph))]
                     # rem_edge!(graph, toRemove)
                     rem_edge!(graph,toRemove[1],toRemove[2])

@@ -13,6 +13,7 @@ include("graphToFitnessMaps/fitnessClassical.jl")
 include("farmers/segregationDistributionAveraged.jl")
 include("introductionJudgers/judgerEgoDefectorVis.jl")
 include("farmers/degreeDistributionAveraged.jl")
+include("introductionJudgers/judgerEgoDefAccept.jl")
 
 greet() = println("Hello World!")
 

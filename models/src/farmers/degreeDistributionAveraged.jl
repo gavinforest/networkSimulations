@@ -18,7 +18,7 @@ flatten(x) = [i for y in x for i in y]
 function degDistAvg(simulator;  numTrials = 30, coopPropRange = [0.5], N = 100)
     resultsArray = []
     # @showprogress for coopP in coopPropRange
-    results = SharedArray{Tuple{Int64, Int64, Int64, Int64}}(numTrials * N)
+    results = SharedArray{Tuple{Int64, Int64, Int64, Int64, Int64}}(numTrials * N)
     coopP = coopPropRange[1]
     @sync @distributed for n = 1:numTrials
         # println("Starting trial")
@@ -32,7 +32,7 @@ function degDistAvg(simulator;  numTrials = 30, coopPropRange = [0.5], N = 100)
             tDegree = degree(outgraph, v)
             cDegree = length([x for x in neighbors(outgraph,v) if outAgentTypes[x] == 1])
             dDegree = tDegree - cDegree
-            results[v + (n-1) * numTrials] = (tDegree, cDegree, dDegree, (n -1) * N + v)
+            results[v + (n-1) * numTrials] = (tDegree, cDegree, dDegree, (n -1) * N + v, outAgentTypes[v])
         end
         println("finished trial")
     end

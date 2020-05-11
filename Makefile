@@ -1,9 +1,9 @@
 .PHONY: all
-all : data figures examples
-data: data10 data100 data300 dataDefVis degreeDist
-dataDefVis : defVis10 defVis100 defVis300
+all : NREdata figures examples
+NREdata: NREdata10 NREdata100 NREdata300 NREdataDefVis NREdegreeDist
+NREdataDefVis : defVis10 defVis100 defVis300
 
-data%: data/nonRivalCoopWins%.csv data/baseNonRivalCoopWins%.csv data/nonRivalCoopWins%TS.csv
+NREdata%: data/nonRivalCoopWins%.csv data/baseNonRivalCoopWins%.csv data/nonRivalCoopWins%TS.csv
 defVis%: data/nonRivalDefVisCoopWins%.csv data/nonRivalDefVisCoopWins%TS.csv 
 degreeDist: data/nonRivalDegreeDist20000.csv
 

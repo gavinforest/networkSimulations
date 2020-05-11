@@ -17,12 +17,16 @@ function parse_commandline()
             help = "Cooperator fraction"
             arg_type = Float64
             required = true
+        "-i"
+            help = "Get a single tseries out"
+            arg_type = Int
+            default = -1
     end
 
     return parse_args(s)
 end
 
-function makeTSeriesPlot(popsize, frac)
+function makeTSeriesPlot(popsize, frac, ID)
 
 	root = "/Users/gavin/Documents/Stay_Loose/Research/Evolutionary_Dynamics/networkSimulations"
 
@@ -47,8 +51,12 @@ function makeTSeriesPlot(popsize, frac)
         exit()
     end
 
+    if ID == -1
+        tseries = frame |> @filter((_.id >= IDstart) && (_.id <= IDend) ) |> DataFrame
+    else
+        tseries = frame |> @filter((_.id == IDstart + ID)) |> DataFrame
+    end
 
-    tseries = frame |> @filter((_.id >= IDstart) && (_.id <= IDend) ) |> DataFrame
     uns = unique(tseries, :n)
     gens = uns.n
     # @show (gens[1:6])
@@ -85,8 +93,9 @@ function main()
 	parsed_args = parse_commandline()
 	N = parsed_args["N"]
     f = parsed_args["f"]
+    ID = parsed_args["i"]
 	# println("Called with N = $N")
-	makeTSeriesPlot(N,f)
+	makeTSeriesPlot(N,f, ID)
 end
 main()
 

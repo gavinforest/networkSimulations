@@ -2,7 +2,7 @@ module fitnessClassical
 
 using LightGraphs
 
-export GtoFClassicalTemplate, getIndFitClassical, fitUpdaterTemplate
+export GtoFClassicalTemplate, getIndFitClassical, fitUpdaterTemplateClassical
 
 function generateFitnessFromGraphClassical(G, types, b, c, w)
     payoffs = [0 for i in 1:nv(G)]

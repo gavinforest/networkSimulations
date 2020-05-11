@@ -1,6 +1,7 @@
 using Distributed
 using DataFrames
 import CSV
+using ArgParse
 
 PROCS = 5
 toAdd = PROCS - nprocs()
@@ -20,7 +21,7 @@ function parse_commandline()
             help = "an option with an argument"
             arg_type = Int
       		required = true
-      	"--judge"
+      	"--judger"
       		help = "The judger to be used"
       		arg_type = String
       		default = "ego"
@@ -28,6 +29,10 @@ function parse_commandline()
       		help = "The fitness function"
       		arg_type = String
       		default = "nonRival"
+      	"-k"
+      		help = "Shape parameter for judger"
+      		arg_type = Float64
+      		default = 1.0
     end
 
     return parse_args(s)
@@ -36,8 +41,9 @@ end
 
 parsed_args = parse_commandline()
 @eval @everywhere N = $(parsed_args["N"])
-@eval @everywhere judgerName = $(parsed_args["judge"])
-@eval @everywhere fName = $(parsed_args["fName"])
+@eval @everywhere judgerName = $(parsed_args["judger"])
+@eval @everywhere fName = $(parsed_args["fitness"])
+@eval @everywhere k = $(parsed_args["k"])
 
 @everywhere begin
 	import models
@@ -46,6 +52,7 @@ parsed_args = parse_commandline()
 	using models.simulateIntroductionModel
 	using models.judgerSigmaEgo
 	using models.judgerSigmaMean
+	using models.judgerEgoDefAccept
 	using models.fitnessNonRival
 	using models.fitnessClassical
 	using models.fitnessDivisible
@@ -66,7 +73,7 @@ parsed_args = parse_commandline()
 		fitFunc = GtoFNonRivalTemplate(5,1,intensity)
 		updater = fitUpdaterTemplateNonRival(5,1,intensity)
 		if fName == "classical"
-			fitFunc = GtoFClassicalTemplate
+			fitFunc = GtoFClassicalTemplate(5,1,intensity)
 			updater = fitUpdaterTemplateClassical(5,1,intensity)
 		elseif fName == "divisible"
 			fitFunc = GtoFDivisibleTemplate(5,1, intensity)
@@ -74,21 +81,29 @@ parsed_args = parse_commandline()
 		end
 		
 		judge = judgeSigmaEgo
-		if judgerName == "mean"
+		if judgerName == "Mean"
 			judge = judgerSigmaMean
+		elseif judgerName == "EgoDefAccept"
+			judge = judgeEgoDefAccept
+		elseif judgerName != "Ego"
+			exit()
 		end
 
 		mut = makeMutator(0.01)
-		return simulateIntroModel(G,types,numRounds,judge, fitFunc, mut, sampleInterval = sampleInt, fitUpdater! = updater)
+		return simulateIntroModel(G,types,numRounds,judge, fitFunc, mut, sampleInterval = sampleInt, fitUpdater! = updater, k= k)
 	end
 end
 coopPropRange = [0.01 * i for i in 1:99]
 nTrials = 100 #just for debug!
 @time resultDf, seriesDf = segDistAvg(mySimulator, numTrials = nTrials, coopPropRange = coopPropRange, numSamples = numSamples)
 
-
-CSV.write("$root/data/$(fName)$(judgerName)CoopWins$N.csv", resultDf)
-CSV.write("$root/data/$(fName)$(judgerName)CoopWins$(N)TS.csv", seriesDf)
+if k == 1.
+	CSV.write("$root/data/$(fName)$(judgerName)CoopWins$N.csv", resultDf)
+	CSV.write("$root/data/$(fName)$(judgerName)CoopWins$(N)TS.csv", seriesDf)
+else
+	CSV.write("$root/data/$(fName)$(judgerName)k$(round(Int,k))CoopWins$N.csv", resultDf)
+	CSV.write("$root/data/$(fName)$(judgerName)k$(round(Int,k))CoopWins$(N)TS.csv", seriesDf)
+end
 
 
 

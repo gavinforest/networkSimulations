@@ -12,16 +12,34 @@ function parse_commandline()
             help = "an option with an argument"
             arg_type = Int
       		required = true
+      	"--fitness"
+      		help = "The fitness function"
+      		arg_type = String
+      		default = "nonRival"
+      	"-k"
+      		help = "Shape parameter for judger"
+      		arg_type = Float64
+      		default = 1.0
     end
 
     return parse_args(s)
 end
 
-function makeWinsPlot(popsize)
+
+parsed_args = parse_commandline()
+N = parsed_args["N"]
+fName = parsed_args["fitness"]
+k = parsed_args["k"]
+
+function makeWinsPlot()
 
 	root = "/Users/gavin/Documents/Stay_Loose/Research/Evolutionary_Dynamics/networkSimulations"
+	if k == 1.0
+		frame = CSV.read("$root/data/$(fName)DefVisCoopWins$N.csv")
+	else
+		frame = CSV.read("$root/data/$(fName)DefVisk$(round(Int,k))CoopWins$N.csv")
+	end
 
-	frame = CSV.read("$root/data/nonRivalDefVisCoopWins$popsize.csv")
 
 	averaged = by(frame, :epsilon, [:payoffDiff, :fitDiff] =>  x -> (pwins = sum([1.0 for i in x.payoffDiff if i > 0.0])/length(x.payoffDiff), 
 																fwins = sum([1.0 for i in x.fitDiff if i > 0.0])/length(x.fitDiff)))
@@ -29,20 +47,19 @@ function makeWinsPlot(popsize)
 	epsilons = unique(frame, :epsilon).epsilon
 	# @show coops
 	# @show winsMat
-	s = "Cooperator Preference by Defector Visibility, N = $popsize"
+	s = "Cooperator Preference by Defector Visibility, N = $N"
 
-	myplot = scatter(epsilons, winsMat, label= ["By payoff" "By fitness"], title = s);
+	myplot = scatter(epsilons, winsMat, label= ["By payoff" "By fitness"], title = s, dpi = 250);
 	ylabel!(myplot, "Proportion of Cooperator Victories");
 	xlabel!(myplot, "Cooperator Visibility");
-	savefig(myplot, "$root/figs/nonRivalDefVisCoopWins$popsize.png");
+	if k == 1.0
+		savefig(myplot, "$root/figs/$(fName)DefVisCoopWins$N.png");
+	else
+		savefig(myplot, "$root/figs/$(fName)DefVisk$(round(Int,k))CoopWins$N.png");
+	end
+
 end 
 
-function main()
-	parsed_args = parse_commandline()
-	N = parsed_args["N"]
-	# println("Called with N = $N")
-	makeWinsPlot(N)
-end
-main()
+makeWinsPlot()
 
 

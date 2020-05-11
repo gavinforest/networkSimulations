@@ -2,7 +2,7 @@ module fitnessNonRival
 
 using LightGraphs
 
-export GtoFNonRivalTemplate, getIndFitNonRival, fitUpdaterTemplate
+export GtoFNonRivalTemplate, getIndFitNonRival, fitUpdaterTemplateNonRival
 
 function generateFitnessFromGraphNonRival(G, types, b, c, w)
     payoffs = [0.0 for i in 1:nv(G)]

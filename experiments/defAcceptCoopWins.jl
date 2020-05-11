@@ -1,6 +1,7 @@
 using DataFrames
 using ArgParse
 using ProgressMeter
+using Distributed
 import CSV
 
 
@@ -22,6 +23,14 @@ function parse_commandline()
             help = "an option with an argument"
             arg_type = Int
       		required = true
+      	"--fitness"
+      		help = "The fitness function"
+      		arg_type = String
+      		default = "nonRival"
+      	"-k"
+      		help = "Shape parameter for judger"
+      		arg_type = Float64
+      		default = 1.0
     end
 
     return parse_args(s)
@@ -30,41 +39,46 @@ end
 
 parsed_args = parse_commandline()
 @eval @everywhere N = $(parsed_args["N"])
+@eval @everywhere fName = $(parsed_args["fitness"])
+@eval @everywhere k = $(parsed_args["k"])
 
 @everywhere begin
 	import models
 	using LightGraphs
 
 	using models.simulateIntroductionModel
-	using models.judgerEgoDefectorVis
+	using models.judgerEgoDefAccept
 	using models.fitnessNonRival
+	using models.fitnessClassical
+	using models.fitnessDivisible
 	using models.mutateUniform
 	using models.segregationDistributionAveraged
 
 	sampleInt = 5000
 	numRounds = 500000
-	if N < 50
-		numRounds = 100000
-	end
-
 	numSamples = ceil(Int, numRounds/sampleInt)
-	epsilons = [0.05 * i for i in 0:20]
-	simulators = []
-	for e in epsilons
-		function mySimulator(;coopProp = 0.5, intensity = 0.01)
-			G = random_regular_graph(N,5)
-			nCoops = floor(Int, coopProp * nv(G))
-			types = [0 for i in 1:nv(G)]
-			for j in 1:nCoops
-				types[j] = 1
-			end
-			fitFunc = GtoFNonRivalTemplate(5,1,intensity)
-			updater = fitUpdaterTemplate(5,1,intensity)
-			judge = makeJudgeEgoDefVis(e)
-			mut = makeMutator(0.01)
-			return simulateIntroModel(G,types,numRounds,judge, fitFunc, mut, sampleInterval = sampleInt, fitUpdater! = updater)
+	function mySimulator(;coopProp = 0.5, intensity = 0.01)
+		G = random_regular_graph(N,5)
+		nCoops = floor(Int, coopProp * nv(G))
+		types = [0 for i in 1:nv(G)]
+		for j in 1:nCoops
+			types[j] = 1
 		end
-		push!(simulators, mySimulator)
+
+		fitFunc = GtoFNonRivalTemplate(5,1,intensity)
+		updater = fitUpdaterTemplateNonRival(5,1,intensity)
+		if fName == "classical"
+			fitFunc = GtoFClassicalTemplate(5,1,intensity)
+			updater = fitUpdaterTemplateClassical(5,1,intensity)
+		elseif fName == "divisible"
+			fitFunc = GtoFDivisibleTemplate(5,1, intensity)
+			updater = Nothing
+		end
+		
+		judge = judgeEgoDefAccept
+
+		mut = makeMutator(0.01)
+		return simulateIntroModel(G,types,numRounds,judge, fitFunc, mut, sampleInterval = sampleInt, fitUpdater! = updater, k= k)
 	end
 end
 nTrials = 50 #just for debug!
@@ -86,9 +100,13 @@ end
 
 
 
-
-CSV.write("$root/data/nonRivalDefVisCoopWins$N.csv", results)
-CSV.write("$root/data/nonRivalDefVisCoopWins$(N)TS.csv", series)
+if k != 1.0
+	CSV.write("$root/data/$(fName)DefAcceptk$(round(Int,k))CoopWins$N.csv", results)
+	CSV.write("$root/data/$(fName)DefAcceptk$(round(Int,k))CoopWins$(N)TS.csv", series)
+else
+	CSV.write("$root/data/$(fName)DefAcceptCoopWins$N.csv", results)
+	CSV.write("$root/data/$(fName)DefAcceptCoopWins$(N)TS.csv", series)
+end
 
 
 
