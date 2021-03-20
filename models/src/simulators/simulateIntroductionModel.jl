@@ -49,7 +49,7 @@ function simulateIntroModel(graph, types,numRounds, introJudger, graphToFit, mut
             	pConnect = introJudger(graph, types, fitnesses, a,b,c,k)
                 if (rand() < pConnect)
                     ind = ceil(Int, rand()*NE)
-                    toRemove = myEdges[ind
+                    toRemove = myEdges[ind]
                     # toRemove = collect(edges(graph))[rand(1:ne(graph))]
                     # rem_edge!(graph, toRemove)
                     rem_edge!(graph,toRemove[1],toRemove[2])
@@ -62,7 +62,6 @@ function simulateIntroModel(graph, types,numRounds, introJudger, graphToFit, mut
                     else
                         # fitUpdater!(graph, fitnesses, types, (a,c), (src(toRemove),dst(toRemove)))
                         fitUpdater!(graph, fitnesses, types, (a,c), toRemove)
-
                     end
                 end
             end

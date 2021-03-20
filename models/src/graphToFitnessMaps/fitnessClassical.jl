@@ -22,7 +22,7 @@ function getIndFitClassical(v, G, types, b, c, w)
     for j in inneighbors(G,j)
         myPayoff += b * types[j]
     end
-    myPayoff -= c * outDegree(G,v)
+    myPayoff -= c * outDegree(G,v) * types[v]
     return exp(w * myPayoff)
 end
 

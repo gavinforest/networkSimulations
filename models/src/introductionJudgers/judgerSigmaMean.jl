@@ -1,6 +1,7 @@
 module judgerSigmaMean
 
 using LightGraphs
+using StatsBase
 
 export judgeSigmaMean
 
@@ -11,8 +12,8 @@ end
 
 function judgeSigmaMean(graph, types, fitnesses, a,b,c, k)
 	introFitness = fitnesses[b]
-	aAvgFitness = mean([fitnesses[j] for j in neighbors(G1,a)])
-    cAvgFitness = mean([fitnesses[j] for j in neighbors(G1,c)])
+	aAvgFitness = mean([fitnesses[j] for j in neighbors(graph,a)])
+    cAvgFitness = mean([fitnesses[j] for j in neighbors(graph,c)])
     pConnect = sigma(introFitness - aAvgFitness,k) * sigma(introFitness - cAvgFitness,k)
     return pConnect
 end
