@@ -24,7 +24,7 @@ function parse_commandline()
       	"--judger"
       		help = "The judger to be used"
       		arg_type = String
-      		default = "ego"
+      		default = "Ego"
       	"--fitness"
       		help = "The fitness function"
       		arg_type = String
@@ -33,6 +33,10 @@ function parse_commandline()
       		help = "Shape parameter for judger"
       		arg_type = Float64
       		default = 1.0
+      	"--defcost"
+      		help = "Cost for defectors under classicalDefCost"
+      		arg_type = Float64
+      		default = 0.2
     end
 
     return parse_args(s)
@@ -44,6 +48,7 @@ parsed_args = parse_commandline()
 @eval @everywhere judgerName = $(parsed_args["judger"])
 @eval @everywhere fName = $(parsed_args["fitness"])
 @eval @everywhere k = $(parsed_args["k"])
+@eval @everywhere c_def = $(parsed_args["defcost"])
 
 @everywhere begin
 	import models
@@ -56,6 +61,8 @@ parsed_args = parse_commandline()
 	using models.fitnessNonRival
 	using models.fitnessClassical
 	using models.fitnessDivisible
+	using models.fitnessAveraged
+	using models.fitnessClassicalDefCost
 	using models.mutateUniform
 	using models.segregationDistributionAveraged
 
@@ -78,11 +85,17 @@ parsed_args = parse_commandline()
 		elseif fName == "divisible"
 			fitFunc = GtoFDivisibleTemplate(5,1, intensity)
 			updater = Nothing
+		elseif fName == "averaged"
+			fitFunc = GtoFAveragedTemplate(5,1,intensity)
+			updater = Nothing
+		elseif fName == "classicalDefCost"
+			fitFunc = GtoFClassicalDefCostTemplate(5,1,c_def,intensity)
+			updater = Nothing
 		end
 		
 		judge = judgeSigmaEgo
 		if judgerName == "Mean"
-			judge = judgerSigmaMean
+			judge = judgeSigmaMean
 		elseif judgerName == "EgoDefAccept"
 			judge = judgeEgoDefAccept
 		elseif judgerName != "Ego"
@@ -97,12 +110,22 @@ coopPropRange = [0.01 * i for i in 1:99]
 nTrials = 100 #just for debug!
 @time resultDf, seriesDf = segDistAvg(mySimulator, numTrials = nTrials, coopPropRange = coopPropRange, numSamples = numSamples)
 
-if k == 1.
-	CSV.write("$root/data/$(fName)$(judgerName)CoopWins$N.csv", resultDf)
-	CSV.write("$root/data/$(fName)$(judgerName)CoopWins$(N)TS.csv", seriesDf)
+if k == 1.0
+	if fName == "classicalDefCost"
+		CSV.write("$root/data/$(fName)$(judgerName)DefCost$(round(Int,c_def*10))CoopWins$N.csv", resultDf)
+		CSV.write("$root/data/$(fName)$(judgerName)DefCost$(round(Int,c_def*10))CoopWins$(N)TS.csv", seriesDf)	
+	else
+		CSV.write("$root/data/$(fName)$(judgerName)CoopWins$N.csv", resultDf)
+		CSV.write("$root/data/$(fName)$(judgerName)CoopWins$(N)TS.csv", seriesDf)
+	end
 else
-	CSV.write("$root/data/$(fName)$(judgerName)k$(round(Int,k))CoopWins$N.csv", resultDf)
-	CSV.write("$root/data/$(fName)$(judgerName)k$(round(Int,k))CoopWins$(N)TS.csv", seriesDf)
+	if fName == "classicalDefCost"
+		CSV.write("$root/data/$(fName)$(judgerName)DefCost$(round(Int,c_def*10))k$(round(Int,k))CoopWins$N.csv", resultDf)
+		CSV.write("$root/data/$(fName)$(judgerName)DefCost$(round(Int,c_def*10))k$(round(Int,k))CoopWins$(N)TS.csv", seriesDf)
+	else
+		CSV.write("$root/data/$(fName)$(judgerName)k$(round(Int,k))CoopWins$N.csv", resultDf)
+		CSV.write("$root/data/$(fName)$(judgerName)k$(round(Int,k))CoopWins$(N)TS.csv", seriesDf)
+	end
 end
 
 
